@@ -1,32 +1,33 @@
 ﻿import sys
 import random
-from PySide6 import QtCore, QtWidgets, QtGui
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QFile, QIODevice
 
-class MyWidget(QtWidgets.QWidget):
-    def __init__(self):
-        super().__init__()
-
-        self.hello = ["Hallo Welt", "Hei maailma", "Hola Mundo", "Привет мир"]
-
-        self.button = QtWidgets.QPushButton("Click me!")
-        self.text = QtWidgets.QLabel("Hello World",
-                                     alignment=QtCore.Qt.AlignCenter)
-
-        self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.addWidget(self.text)
-        self.layout.addWidget(self.button)
-
-        self.button.clicked.connect(self.magic)
-
-    @QtCore.Slot()
-    def magic(self):
-        self.text.setText(random.choice(self.hello))
+from loaddir import loaddir
 
 if __name__ == "__main__":
-    app = QtWidgets.QApplication([])
+    app = QApplication(sys.argv)
 
-    widget = MyWidget()
-    widget.resize(800, 600)
-    widget.show()
+    ui_file_name = "FLT_FilesRename.ui"
+    ui_file = QFile(ui_file_name)
+    if not ui_file.open(QIODevice.ReadOnly):
+        print(f"Cannot open {ui_file_name}: {ui_file.errorString()}")
+        sys.exit(-1)
+    loader = QUiLoader()
+    window = loader.load(ui_file)
+    ui_file.close()
+
+    if not window:
+        print(loader.errorString())
+        sys.exit(-1)
+
+    # Connect here
+    dirmanager = loaddir(window)
+
+    window.btn_folder.clicked.connect(dirmanager.opendialog)
+
+    # Show
+    window.show()
 
     sys.exit(app.exec())
