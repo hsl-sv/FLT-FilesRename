@@ -4,7 +4,7 @@ from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QFile, QIODevice
 
-from loaddir import loaddir
+from manager import RenameManager
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -23,9 +23,10 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     # Connect here
-    dirmanager = loaddir(window)
+    dirmanager = RenameManager(window)
 
     window.btn_folder.clicked.connect(dirmanager.opendialog)
+    window.tbx_replace_target.textChanged.connect(dirmanager.replace_changed)
 
     # Show
     window.show()
