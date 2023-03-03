@@ -1,7 +1,7 @@
 ﻿import sys
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication
-from PySide6.QtCore import QFile, QIODevice
+from PySide6.QtCore import Qt, QFile, QIODevice
 
 from manager import RenameManager
 

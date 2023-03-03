@@ -1,6 +1,7 @@
 import os
 import copy
 import glob
+import datetime
 
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 from PySide6.QtGui import QStandardItem, QStandardItemModel, QBrush, QColor
@@ -93,6 +94,7 @@ class RenameManager(object):
         plist = self.cwd_filelist_preview
         str_builder = "Files affected:"
         str_question = "If push OK:"
+        samefile = []
 
         if pmodel:
             for i in range(pmodel.rowCount()):
@@ -102,7 +104,7 @@ class RenameManager(object):
 
                 if fbase != os.path.basename(plist[i]):
                     str_builder = f"{str_builder}\n{obase} -> {fbase}"
-                    fapply = fpath + os.sep + fbase
+                    fapply = os.path.join(fpath, fbase)
                     plist[i] = fapply
         else:
             self.MainWindow.lbl_affected.setText("Nothing happened (No items)")   
@@ -126,7 +128,19 @@ class RenameManager(object):
         if reply == QMessageBox.Yes:
             for i in range(len(flist)):
                 if flist[i] != plist[i]:
-                    os.rename(flist[i], plist[i])
+                    try:
+                        os.rename(flist[i], plist[i])
+                    except FileExistsError:
+                        fileexists = os.path.splitext(plist[i])[0] + f"-{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}" + os.path.splitext(plist[i])[-1]
+                        os.rename(flist[i], 
+                                  fileexists)
+
+                        samefile.append(fileexists)
+                        
+            if len(samefile) > 0:
+                str_builder = "\n" + str_builder + "\n\n" + "Conflicted file name has been changed:"
+                for i, sfname in enumerate(samefile):
+                    str_builder = f"{str_builder}\n{sfname}"
 
             self.MainWindow.lbl_affected.setText(str_builder)                    
             self.populate_listview(self.cwd)

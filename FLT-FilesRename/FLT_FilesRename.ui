@@ -11,7 +11,13 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>FLT-FilesRename</string>
+  </property>
+  <property name="iconSize">
+   <size>
+    <width>0</width>
+    <height>0</height>
+   </size>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -74,7 +80,7 @@
          </size>
         </property>
         <property name="text">
-         <string>...</string>
+         <string>Select</string>
         </property>
        </widget>
       </item>
