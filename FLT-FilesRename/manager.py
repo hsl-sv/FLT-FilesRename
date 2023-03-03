@@ -54,6 +54,7 @@ class RenameManager(object):
         self.MainWindow.lbl_currentdir.setText(str(folder))
 
     def replace_changed(self):
+        # TODO: pick words only
 
         target_txt = self.MainWindow.tbx_replace_target.toPlainText()
         model = self.MainWindow.lv_directory.model()
@@ -88,6 +89,8 @@ class RenameManager(object):
 
     def replace_apply(self):
         # preview model -> apply to flist -> os.rename
+        self.replace_changed()
+        self.replace_preview()
 
         pmodel = self.MainWindow.lv_preview.model()
         flist = self.cwd_filelist
