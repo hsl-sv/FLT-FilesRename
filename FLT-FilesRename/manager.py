@@ -2,7 +2,7 @@ import os
 import copy
 import glob
 
-from PySide6.QtWidgets import QFileDialog
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 from PySide6.QtGui import QStandardItem, QStandardItemModel, QBrush, QColor
 
 class RenameManager(object):
@@ -15,6 +15,8 @@ class RenameManager(object):
         self.items = QStandardItemModel()
         self.items_preview = QStandardItemModel()
         self.brush_selected = QBrush(QColor(0, 0, 255))
+        self.brush_unselect = QBrush(QColor(0, 0, 0))
+        self.brush_preview = QBrush(QColor(255, 0, 0))
         self.MainWindow = MainWindow
 
     def test(self):
@@ -30,6 +32,7 @@ class RenameManager(object):
         flist = glob.glob(f"{str(folder)}" + os.sep + "*")
         dirlist = []
         self.items.clear()
+        self.items_preview.clear()
 
         for i, fpath in enumerate(flist):
             if os.path.isdir(fpath):
@@ -46,7 +49,7 @@ class RenameManager(object):
         self.cwd_filelist_preview = copy.copy(self.cwd_filelist)
 
         self.MainWindow.lv_directory.setModel(self.items)
-        self.MainWindow.lv_preview.setModel(self.items)
+        self.MainWindow.lv_preview.setModel(self.items_preview)
         self.MainWindow.lbl_currentdir.setText(str(folder))
 
     def replace_changed(self):
@@ -54,9 +57,83 @@ class RenameManager(object):
         target_txt = self.MainWindow.tbx_replace_target.toPlainText()
         model = self.MainWindow.lv_directory.model()
 
-        for i in range(model.rowCount()):
-            if target_txt in model.item(i).text():
-                model.item(i).setForeground(self.brush_selected)
+        if model:
+            for i in range(model.rowCount()):
+                if target_txt in model.item(i).text():
+                    model.item(i).setForeground(self.brush_selected)
+                else:
+                    model.item(i).setForeground(self.brush_unselect)
 
-        print(self.MainWindow.tbx_replace_target.toPlainText())
-        pass
+    def replace_preview(self):
+        # tbx_replace_dest -> preview model
+        rtarget = self.MainWindow.tbx_replace_target.toPlainText()
+        rdest = self.MainWindow.tbx_replace_dest.toPlainText()
+
+        if not rtarget or rtarget.isspace():
+            print("return from replace_preview")
+            return
+        
+        pmodel = self.MainWindow.lv_preview.model()
+        plist = self.cwd_filelist_preview
+
+        if pmodel:
+            for i in range(pmodel.rowCount()):
+                if rtarget in os.path.basename(plist[i]):
+                    # Its preview
+                    pmodel.item(i).setText(os.path.basename(plist[i]).replace(rtarget, rdest))
+                    pmodel.item(i).setForeground(self.brush_preview)
+                else:
+                    pmodel.item(i).setForeground(self.brush_unselect)
+
+    def replace_apply(self):
+        # preview model -> apply to flist -> os.rename
+
+        pmodel = self.MainWindow.lv_preview.model()
+        flist = self.cwd_filelist
+        plist = self.cwd_filelist_preview
+        str_builder = "Files affected:"
+        str_question = "If push OK:"
+
+        if pmodel:
+            for i in range(pmodel.rowCount()):
+                fpath = os.path.dirname(plist[i])
+                fbase = pmodel.item(i).text()
+                obase = os.path.basename(plist[i])
+
+                if fbase != os.path.basename(plist[i]):
+                    str_builder = f"{str_builder}\n{obase} -> {fbase}"
+                    fapply = fpath + os.sep + fbase
+                    plist[i] = fapply
+        else:
+            self.MainWindow.lbl_affected.setText("Nothing happened (No items)")   
+            return
+
+        str_explode = str_builder.split("\n")
+
+        if len(str_explode) == 1:
+            self.MainWindow.lbl_affected.setText("Nothing happened (No candidates)")   
+            return
+
+        for i in range(1, len(str_explode)):
+            str_question = f"{str_question}\n{str_explode[i]}"
+            if i >= 10:
+                str_question = f"{str_question}...\nAnd {len(str_explode) - (i + 1)} more files"
+                break
+
+        reply = QMessageBox.question(self.MainWindow, "Confirm", str_question,
+                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            for i in range(len(flist)):
+                if flist[i] != plist[i]:
+                    os.rename(flist[i], plist[i])
+
+            self.MainWindow.lbl_affected.setText(str_builder)                    
+            self.populate_listview(self.cwd)
+            self.replace_changed()
+            self.MainWindow.tbx_replace_dest.setPlainText("")
+        else:
+            str_builder = "Change aborted"
+            self.MainWindow.lbl_affected.setText(str_builder)                 
+            self.populate_listview(self.cwd)   
+            self.MainWindow.tbx_replace_dest.setPlainText("")

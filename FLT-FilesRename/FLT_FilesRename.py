@@ -1,5 +1,4 @@
 ﻿import sys
-import random
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QFile, QIODevice
@@ -26,7 +25,10 @@ if __name__ == "__main__":
     dirmanager = RenameManager(window)
 
     window.btn_folder.clicked.connect(dirmanager.opendialog)
+
     window.tbx_replace_target.textChanged.connect(dirmanager.replace_changed)
+    window.tbx_replace_dest.textChanged.connect(dirmanager.replace_preview)
+    window.btn_apply.clicked.connect(dirmanager.replace_apply)
 
     # Show
     window.show()
