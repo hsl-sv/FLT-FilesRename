@@ -2,6 +2,7 @@ import os
 import copy
 import glob
 import datetime
+import re
 
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 from PySide6.QtGui import QStandardItem, QStandardItemModel, QBrush, QColor
@@ -21,13 +22,21 @@ class RenameManager(object):
         self.MainWindow = MainWindow
 
     def test(self):
-        print("Qt Connect Test")
+
+        print("Test function")
+
+    def _lenci(self, ci):
+        return sum(1 for _ in ci)
 
     def opendialog(self):
         
         folder = QFileDialog.getExistingDirectory(None, "Select Directory", self.cwd)
         self.cwd = folder
         self.populate_listview(self.cwd)
+
+    def wordwrap_clicked(self):
+        self.replace_changed()
+        self.replace_preview()
 
     def populate_listview(self, folder):
         flist = glob.glob(f"{str(folder)}" + os.sep + "*")
@@ -54,17 +63,28 @@ class RenameManager(object):
         self.MainWindow.lbl_currentdir.setText(str(folder))
 
     def replace_changed(self):
-        # TODO: pick words only
 
         target_txt = self.MainWindow.tbx_replace_target.toPlainText()
         model = self.MainWindow.lv_directory.model()
+        pattern = re.compile(rf"\b{target_txt}\b")
+
+        if not target_txt or target_txt.isspace():            
+            self.populate_listview(self.cwd)
+            return
 
         if model:
             for i in range(model.rowCount()):
-                if target_txt in model.item(i).text():
-                    model.item(i).setForeground(self.brush_selected)
+                if not self.MainWindow.cbx_wordwrap.isChecked():
+                    if target_txt in model.item(i).text():
+                        model.item(i).setForeground(self.brush_selected)
+                    else:
+                        model.item(i).setForeground(self.brush_unselect)
                 else:
-                    model.item(i).setForeground(self.brush_unselect)
+                    matches = pattern.finditer(model.item(i).text())
+                    if self._lenci(matches) > 0:
+                        model.item(i).setForeground(self.brush_selected)
+                    else:
+                        model.item(i).setForeground(self.brush_unselect)
 
     def replace_preview(self):
         # tbx_replace_dest -> preview model
@@ -72,20 +92,41 @@ class RenameManager(object):
         rdest = self.MainWindow.tbx_replace_dest.toPlainText()
 
         if not rtarget or rtarget.isspace():
-            print("return from replace_preview")
+            self.replace_changed()
             return
         
         pmodel = self.MainWindow.lv_preview.model()
         plist = self.cwd_filelist_preview
+        pattern = re.compile(rf"\b{rtarget}\b")
 
         if pmodel:
             for i in range(pmodel.rowCount()):
-                if rtarget in os.path.basename(plist[i]):
-                    # Its preview
-                    pmodel.item(i).setText(os.path.basename(plist[i]).replace(rtarget, rdest))
-                    pmodel.item(i).setForeground(self.brush_preview)
+                preview_basename = os.path.basename(plist[i])
+                if not self.MainWindow.cbx_wordwrap.isChecked():
+                    if rtarget in preview_basename:
+                        # Its preview
+                        pmodel.item(i).setText(preview_basename.replace(rtarget, rdest))
+                        pmodel.item(i).setForeground(self.brush_preview)
+                    else:
+                        pmodel.item(i).setForeground(self.brush_unselect)
                 else:
-                    pmodel.item(i).setForeground(self.brush_unselect)
+                    matches = pattern.finditer(preview_basename)
+                    matches_rp = pattern.finditer(preview_basename)
+                    if self._lenci(matches) > 0:
+                        re_replace = ""
+                        for match in matches_rp:
+                            fl = preview_basename
+                            span = match.span()
+                            for j in range(len(fl)):
+                                if j == span[1] - 1:
+                                    re_replace = re_replace[:span[0]] + str(rdest)
+                                else:
+                                    re_replace += str(fl[j])
+                            break
+                        pmodel.item(i).setText(re_replace)
+                        pmodel.item(i).setForeground(self.brush_preview)
+                    else:
+                        pmodel.item(i).setForeground(self.brush_unselect)
 
     def replace_apply(self):
         # preview model -> apply to flist -> os.rename

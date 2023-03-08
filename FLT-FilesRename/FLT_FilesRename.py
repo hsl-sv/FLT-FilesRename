@@ -29,6 +29,9 @@ if __name__ == "__main__":
     window.tbx_replace_target.textChanged.connect(dirmanager.replace_changed)
     window.tbx_replace_dest.textChanged.connect(dirmanager.replace_preview)
     window.btn_apply.clicked.connect(dirmanager.replace_apply)
+    window.cbx_wordwrap.stateChanged.connect(dirmanager.wordwrap_clicked)
+    
+    #dirmanager.test()
 
     # Show
     window.show()
