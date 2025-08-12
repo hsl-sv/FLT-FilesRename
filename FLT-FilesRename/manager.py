@@ -39,7 +39,10 @@ class RenameManager(object):
         self.replace_preview()
 
     def populate_listview(self, folder):
-        flist = glob.glob(f"{str(folder)}" + os.sep + "*")
+        if self.MainWindow.cbx_recursive.isChecked():
+            flist = glob.glob(f"{str(folder)}" + os.sep + "**" + os.sep + "*", recursive=True)
+        else:
+            flist = glob.glob(f"{str(folder)}" + os.sep + "*")
         dirlist = []
         self.items.clear()
         self.items_preview.clear()
@@ -66,7 +69,7 @@ class RenameManager(object):
 
         target_txt = self.MainWindow.tbx_replace_target.toPlainText()
         model = self.MainWindow.lv_directory.model()
-        pattern = re.compile(rf"\b{target_txt}\b")
+        pattern = re.compile(rf"{target_txt}")
 
         if not target_txt or target_txt.isspace():            
             self.populate_listview(self.cwd)
@@ -97,7 +100,7 @@ class RenameManager(object):
         
         pmodel = self.MainWindow.lv_preview.model()
         plist = self.cwd_filelist_preview
-        pattern = re.compile(rf"\b{rtarget}\b")
+        pattern = re.compile(rf"{rtarget}")
 
         if pmodel:
             for i in range(pmodel.rowCount()):
