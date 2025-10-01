@@ -69,7 +69,7 @@ class RenameManager(object):
 
         target_txt = self.MainWindow.tbx_replace_target.toPlainText()
         model = self.MainWindow.lv_directory.model()
-        pattern = re.compile(rf"{target_txt}")
+        pattern = re.compile(rf"{re.escape(target_txt)}")
 
         if not target_txt or target_txt.isspace():            
             self.populate_listview(self.cwd)
@@ -100,7 +100,7 @@ class RenameManager(object):
         
         pmodel = self.MainWindow.lv_preview.model()
         plist = self.cwd_filelist_preview
-        pattern = re.compile(rf"{rtarget}")
+        pattern = re.compile(rf"{re.escape(rtarget)}")
 
         if pmodel:
             for i in range(pmodel.rowCount()):
